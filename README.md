@@ -14,7 +14,7 @@ In our implementation, we have added multiple functionalities which include:
 3. Generating a directory that contains the configuration parameters and model checkpoint data
 4. Generating a directory within a parent directory to reflect the history of training when using pretrained weights from a previous models `saved_model.pt` checkpoint.
 
-These functionalities have allowed us to explore feature-engineering, measuring the effects of different inputs on the performance of this network in the context of the singing domain. Reports of this will be presented in our upcoming paper.
+These functionalities have allowed us to explore feature-engineering, measuring the effects of different inputs on the performance of this network in the context of the singing domain. Reports of this will be presented in our upcoming paper, and further updates to this repository including feature engineering, results and pretrained models are forthcoming.
 
 
 To train the network at default settings, simply run:
@@ -36,4 +36,4 @@ python main.py -h
 
 <h2>Acknowledgments</h2>
 
-For our implementation, we made modifcations to the model (which reflects the architecture proposed by [Wan et al. 2018](10.1109/ICASSP.2018.8462665)) and data objects utilised within the encoder module shared by [CorentinJ](https://github.com/CorentinJ/Real-Time-Voice-Cloning).
+For our implementation, we made minor modifcations to the model (which reflects the architecture proposed by [Wan et al. 2018](10.1109/ICASSP.2018.8462665)) and data objects utilised within the encoder module shared by [CorentinJ](https://github.com/CorentinJ/Real-Time-Voice-Cloning).

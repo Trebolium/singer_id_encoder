@@ -6,6 +6,7 @@ from torch import nn
 import numpy as np
 import torch, pdb
 
+"""Minimally altered code from https://github.com/Trebolium/Real-Time-Voice-Cloning/tree/master/model.py"""
 
 class SpeakerEncoder(nn.Module):
     def __init__(self, device, loss_device, class_num, num_feats, model_hidden_size, model_embedding_size, model_num_layers):
