@@ -5,6 +5,9 @@ from data_objects.speaker import Speaker
 from torch.utils.data import Dataset, DataLoader
 from pathlib import Path
 
+"""Altered code from https://github.com/Trebolium/Real-Time-Voice-Cloning/tree/master/encoder/data_objects"""
+
+
 # collects paths to utterances of speakers - does not collect the data itself
 class SpeakerVerificationDataset(Dataset):
     def __init__(self, datasets_root: Path, partials_n_frames):

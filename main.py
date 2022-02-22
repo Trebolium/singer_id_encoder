@@ -53,7 +53,7 @@ if __name__ == "__main__":
     config.string_sum = str(config)
     print_args(config, parser)
 
+    # initiate and train model till finish
     encoder = SingerIdentityEncoder(config)
-
     encoder.train()
     

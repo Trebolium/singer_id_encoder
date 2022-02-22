@@ -2,6 +2,7 @@ import numpy as np
 import math, pdb
 from sklearn.preprocessing import normalize
 
+"""Minimally altered code from https://github.com/Trebolium/Real-Time-Voice-Cloning/tree/master/encoder/data_objects"""
 
 class Utterance:
     def __init__(self, frames_fpath, wave_fpath):
@@ -23,7 +24,6 @@ class Utterance:
         :return: the partial utterance frames and a tuple indicating the start and end of the 
         partial utterance in the complete utterance.
         """
-        # pdb.set_trace()
         frames = self.get_frames()[:,:num_feats]
 
         # frames = (frames - frames.mean()) / frames.std() # normalise from 0-1 across entire numpy

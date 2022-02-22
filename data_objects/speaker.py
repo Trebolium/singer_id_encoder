@@ -1,8 +1,9 @@
 from data_objects.random_cycler import RandomCycler
 from data_objects.utterance import Utterance
 from pathlib import Path
-import pdb
-import numpy as np
+
+"""Minimally altered code from https://github.com/Trebolium/Real-Time-Voice-Cloning/tree/master/encoder/data_objects"""
+
 
 # Contains the set of utterances of a single speaker
 class Speaker:

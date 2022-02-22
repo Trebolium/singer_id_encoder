@@ -1,5 +1,7 @@
 import random, pdb
 
+"""Unaltered code from https://github.com/Trebolium/Real-Time-Voice-Cloning/tree/master/encoder/data_objects"""
+
 class RandomCycler:
     """
     Creates an internal copy of a sequence and allows access to its items in a constrained random 

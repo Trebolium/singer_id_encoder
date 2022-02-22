@@ -1,16 +1,11 @@
 import numpy as np
 from typing import List
 
-from numpy.core.records import array
-#from encoder.data_objects.speaker import Speaker
-import pdb
+"""Minimally altered code from https://github.com/Trebolium/Real-Time-Voice-Cloning/tree/master/encoder/data_objects"""
 
-# gets random 160-frame slice 
 
 class SpeakerBatch:
-    def __init__(self, speakers_data: List, utterances_per_speaker: int, n_frames: int, num_feats):
-        # self.speakers = speakers_data[0]
-        
+    def __init__(self, speakers_data: List, utterances_per_speaker: int, n_frames: int, num_feats): 
         """ dict of speaker lists (uttr objects, evenly spliced uttr_features)"""
         self.partials = {s.name: s.random_partial(utterances_per_speaker, n_frames, num_feats) for s,_ in speakers_data}
         

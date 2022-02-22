@@ -13,10 +13,22 @@ def sync(device):
     if device.type == "cuda":
         torch.cuda.synchronize(device)
 
-
+"""
+SingerIdentityEncoder is an object that initiates a model based on user inputs
+The SIE's train method is implemented which in turn calls its own methods hierarchy:
+    train
+        tester (optional for dev testing)
+        batch_iterate
+            average_print_metrics
+            get_losses
+            get_accuracy
+            backprop_ops
+            print_monitor
+"""
 class SingerIdentityEncoder:
+
     def __init__(self, config) -> None:
-        """Initialise configurations"""
+        #Initialise configurations
         self.print_freq = 5
         self.train_current_step = 0
         self.val_current_step = 0
@@ -25,11 +37,11 @@ class SingerIdentityEncoder:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.loss_device = torch.device("cpu")
 
-        """Load feature parameters from dataset yaml"""
+        #Load feature parameters from dataset yaml
         with open(os.path.join(self.config.feature_dir, 'feat_params.yaml')) as File:
             feat_params = yaml.load(File, Loader=yaml.FullLoader)
 
-        """Create dataset and dataloader for val, train subsets"""
+        #Create dataset and dataloader for val, train subsets
         self.train_dataset = SpeakerVerificationDataset(config.feature_dir.joinpath('train'),
             config.num_timesteps
         )
@@ -71,7 +83,7 @@ class SingerIdentityEncoder:
         self.start_time = time.time()
     
 
-    """Cycle between train and eval mode until completion, monitoring training steps"""
+    #Cycle between train and eval mode until completion, monitoring training steps
     def train(self):
         # self.tester()
         training_complete = False
@@ -90,36 +102,41 @@ class SingerIdentityEncoder:
         print('Training complete')
 
 
+    # iterate through a specificed subset, performing forward/backward passes and other implementing other methods
     def batch_iterate(self, loader, initial_iter_step, mode):
 
-        """Infinite training loop (as loader is infinite) until break"""
+        #Infinite training loop (as loader is infinite) until break
         print(f'---{mode.upper()}---')
         for step, speaker_batch in enumerate(loader, initial_iter_step+1):
             finish_iters = (step != 0 and step % (initial_iter_step + self.mode_iters[mode]) == 0)
             should_print = (step != 0 and step % self.print_freq == 0)
             x_data_npy, y_data_npy = speaker_batch.data[0], speaker_batch.data[1]
+
             # Forward pass
             inputs = torch.from_numpy(x_data_npy).to(self.device).float() # speakerbatch shape = speakers, timesteps, features
             y_data = torch.from_numpy(y_data_npy).to(self.device)
             sync(self.device)
             embeds, predictions = self.model(inputs)
+
+            # generate loss metrics
             accuracy = self.get_accuracy(predictions, y_data)
             ge2e_loss, pred_loss = self.get_losses(embeds, predictions, y_data)
-
             metrics_list = [ge2e_loss, pred_loss, (ge2e_loss + pred_loss), accuracy]
             for i, key in enumerate(self.backprop_losses.keys()): self.backprop_losses[key] = metrics_list[i]
             for i, key in enumerate(self.print_iter_metrics.keys()): self.print_iter_metrics[key] += metrics_list[i]
             for i, key in enumerate(self.entire_iter_metrics.keys()): self.entire_iter_metrics[key] += metrics_list[i]
             self.backprop_ops(mode)
+
+            # scheduled functions: print progress and metrics, save model
             if should_print:
                 self.print_monitor(step, mode)
-            # if mode == 'val':
             self.periodic_ops(step)
             if finish_iters:
                 self.average_print_metrics(step, mode) 
                 break
 
-                    
+    
+    # print out metrics of model performance in a human-readable way and saving to tensorbaord format
     def average_print_metrics(self, step, mode):
 
         print('AVERAGE PER ITER BLOCK')
@@ -144,6 +161,7 @@ class SingerIdentityEncoder:
         for key in self.entire_iter_metrics.keys(): self.entire_iter_metrics[key]=0 #reset the entire_iter_metrics
 
 
+    # Use user inputs to initiate mode, decide whether to save, or include pretrained weights
     def config_model(self):
 
         run_id_path = os.path.join(self.config.models_dir, self.config.run_id)
@@ -180,39 +198,41 @@ class SingerIdentityEncoder:
                 return run_id_path, writer
                 
 
-
+    # generate loss metrics from classifications and embeddings
     def get_losses(self, embeds, predictions, y_data):
-        # reshape output to reflect: speaker, uttrs, embeddings
-        embeds_loss = embeds.view((self.config.speakers_per_batch, self.config.utterances_per_speaker, -1)).to(self.loss_device)
+        embeds_loss = embeds.view((self.config.speakers_per_batch, self.config.utterances_per_speaker, -1)).to(self.loss_device) # reshape output to reflect: speaker, uttrs, embeddings
         # this is the loss for one pass, reflecting 64 speakers of 10 utterances
-        ge2e_loss, eer = self.model.loss(embeds_loss)
+        ge2e_loss, _ = self.model.loss(embeds_loss)
         pred_loss = nn.functional.cross_entropy(predictions, y_data)
         return ge2e_loss, pred_loss
 
+  
+    # generate classification loss using predictions and labels
     def get_accuracy(self, predictions, y_data):
         _, predicted = torch.max(predictions.data, 1)
         correct_preds = (predicted == y_data).sum().item()
         sync(self.loss_device)
         return correct_preds / len(y_data) #accuracy
 
+ 
+    # backpropogate through the network and reset gradients
     def backprop_ops(self, mode):
-        # Backward pass
         if mode == 'train':
             self.backprop_losses[self.config.use_loss].backward() #if loss was generated without using parameters adjusted in do_gradient_ops(), there will be no gradient after backwards upon which to adjust
             self.model.do_gradient_ops(self.backprop_losses[self.config.use_loss])
             self.optimizer.step()
             self.model.zero_grad()
 
+ 
+    # check number of steps in training cycle to determine if saving model and flush TB
     def periodic_ops(self, step):
 
         if step != 0:
             # save new tensorboard data to file
             if step % self.config.tb_every == 0:
                 self.writer.flush()
-            # print(f'Number of steps: {step}')
             # Overwrite the latest version of the model
             if step % self.config.save_every == 0 or step >= self.config.stop_at_step: 
-            # if step >= self.config.stop_at_step: 
                 torch.save(
                     {
                     "step": step,
@@ -222,6 +242,8 @@ class SingerIdentityEncoder:
                     os.path.join(self.this_model_dir, 'saved_model.pt'))
                 print(f"Saving the model (step {step}) at time {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))}")
 
+
+    # print metric info in human-readable format
     def print_monitor(self, step, mode):
         ge2e_loss = self.print_iter_metrics['ge2e'].item()/self.print_freq
         pred_loss = self.print_iter_metrics['pred'].item()/self.print_freq
@@ -235,5 +257,7 @@ class SingerIdentityEncoder:
             print(f'Steps {self.train_current_step}/{self.config.stop_at_step}, Accuracy: {round(pred_acc, 4)}, GE2E loss: {round(ge2e_loss, 4)}, Pred loss: {round(pred_loss, 4)}, Total loss: {round(total_loss, 4)}') 
         for key in self.print_iter_metrics.keys(): self.print_iter_metrics[key]=0  
 
+
+    # method for testing the computation of feature and batches without multiprocessing for debugging
     def tester(self):
         collater(self.train_dataset, self.config.utterances_per_speaker, self.config.num_timesteps, self.num_feats)    
