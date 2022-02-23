@@ -33,13 +33,13 @@ class SingerIdentityEncoder:
         self.train_current_step = 0
         self.val_current_step = 0
         self.config = config
-        self.num_feats = feat_params['num_feats']
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.loss_device = torch.device("cpu")
 
         #Load feature parameters from dataset yaml
         with open(os.path.join(self.config.feature_dir, 'feat_params.yaml')) as File:
             feat_params = yaml.load(File, Loader=yaml.FullLoader)
+        self.num_feats = feat_params['num_feats']
 
         #Create dataset and dataloader for val, train subsets
         self.train_dataset = SpeakerVerificationDataset(config.feature_dir.joinpath('train'),

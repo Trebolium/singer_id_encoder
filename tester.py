@@ -1,4 +1,3 @@
-from re import I
 from data_objects.random_cycler import RandomCycler
 from data_objects.utterance import Utterance
 import numpy as np
